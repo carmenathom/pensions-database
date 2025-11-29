@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pensions Database</title>
+    <title>Register - Pensions Database</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
 </head>
-
 <body>
     <nav class="navbar">
         <ul class="nav-left">
@@ -29,8 +28,30 @@
           {% endif %}
         </ul>
     </nav>
+    <h2>Register</h2>
+    <form method="POST" action="{{ url_for('auth.register') }}">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required><br>
 
-    <h2>Database project</h2>
-    <p>Lorem ipsum.</p>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br>
+
+        <label for="name">Full Name:</label>
+        <input type="text" id="name" name="name"><br>
+
+        <label for="role">Role:</label>
+        <select id="role" name="role" required>
+            <option value="EndUser">EndUser</option>
+            <option value="Curator">Curator</option>
+            <option value="Admin">Admin</option>
+        </select><br>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p>
 </body>
 </html>

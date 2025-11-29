@@ -1,9 +1,15 @@
-from flask import Flask, render_template, session, redirect, url_for
-from dotenv import load_dotenv
 import os
+from auth import auth
+from db import get_db
+from dotenv import load_dotenv
+from flask import Flask, render_template, session, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY") 
+app.register_blueprint(auth)
+
 
 @app.route("/")
 def index():
