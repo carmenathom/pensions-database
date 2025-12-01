@@ -51,3 +51,51 @@ def validate_login(username, password):
     if user and check_password_hash(user['password_hash'], password):  
         return user
     return None
+
+
+def get_all_users():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT user_id, username, email, role, name, created_at
+        FROM Users
+        ORDER BY user_id;
+    """)
+    users = cur.fetchall()
+
+    cur.close()
+    conn.close()
+    return users
+
+
+def get_user_by_id(user_id):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT user_id, username, email, role, name
+        FROM Users
+        WHERE user_id = %s;
+    """, (user_id,))
+
+    user = cur.fetchone()
+
+    cur.close()
+    conn.close()
+    return user
+
+def update_user(user_id, username, email, role, name):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Users
+        SET username = %s, email = %s, role = %s, name = %s
+        WHERE user_id = %s;
+    """, (username, email, role, name, user_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+

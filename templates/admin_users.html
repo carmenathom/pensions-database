@@ -1,12 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pensions Database</title>
+    <title>Manage Users</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
-</head>
 
+</head>
 <body>
     <nav class="navbar">
         <ul class="nav-left">
@@ -33,7 +31,29 @@
         </ul>
     </nav>
 
-    <h2>Database project</h2>
-    <p>Lorem ipsum.</p>
+<h2>Registered Users</h2>
+
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Name</th>
+        <th>Action</th>
+    </tr>
+
+    {% for u in users %}
+    <tr>
+        <td>{{ u.user_id }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.role }}</td>
+        <td>{{ u.name }}</td>
+        <td><a href="/admin/edit/{{ u.user_id }}">Edit</a></td>
+    </tr>
+    {% endfor %}
+</table>
+
 </body>
 </html>

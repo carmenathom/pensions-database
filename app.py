@@ -4,12 +4,12 @@ from db import get_db
 from dotenv import load_dotenv
 from flask import Flask, render_template, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from admin import admin_bp
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY") 
 app.register_blueprint(auth)
-
+app.register_blueprint(admin_bp)
 
 @app.route("/")
 def index():
