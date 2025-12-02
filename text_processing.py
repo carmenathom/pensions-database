@@ -1,98 +1,87 @@
-### Text Proccesssing 
-# CS 480: Database Systems
-# Carmen A. Thom
-
 import os
+import json
 import faiss
 import numpy as np
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 
-def get_chunked_text(chunk_size = 500):
-    all_chunks = []
+RAG_DIR = "rag"
+os.makedirs(RAG_DIR, exist_ok=True)
 
-    for filename in os.listdir("dataset"):
-        full_path = os.path.join("dataset", filename)
+INDEX_PATH = os.path.join(RAG_DIR, "index.faiss")
+CHUNKS_PATH = os.path.join(RAG_DIR, "chunks.json")
+META_PATH = os.path.join(RAG_DIR, "metadata.json")
 
-        reader = PdfReader(full_path)
-        full_text = ""
+model = SentenceTransformer("all-MiniLM-L6-v2") 
 
-        for page in reader.pages:
-            extracted = page.extract_text()
-            if extracted:
-                full_text += extracted + "\n"
 
-        chunks = [
-            full_text[i:i + chunk_size] 
-            for i in range(0, len(full_text), chunk_size)
-        ]
-        all_chunks.extend(chunks)
+def load_faiss_index(dim=384):
+    if os.path.exists(INDEX_PATH):
+        return faiss.read_index(INDEX_PATH)
+    idx = faiss.IndexFlatL2(dim)
+    return idx
 
-    return all_chunks
-
-def get_embeddings():
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    chunks = get_chunked_text()
-    embeddings = model.encode(chunks, show_progress_bar=True)
-    return chunks, embeddings
-
-def index_faiss():
-    chunks, embeddings = get_embeddings()
-
-    embeddings = np.array(embeddings).astype("float32")
-    dim = embeddings.shape[1]
-
-    index = faiss.IndexFlatL2(dim)
-    index.add(embeddings)
-
-    faiss.write_index(index, "vector_index.faiss")
-
-    with open("chunks.txt", "w", encoding = "utf-8") as f:
-        for c in chunks:
-            c = c.replace("\n", " ") 
-            f.write(c + "\n<<<END>>>\n")
 
 def load_chunks():
-    chunks = []
-    buffer = ""
-
-    with open("chunks.txt", "r", encoding="utf-8") as f:
-        for line in f:
-            if line.strip() == "<<<END>>>":
-                chunks.append(buffer.strip())
-                buffer = ""
-            else:
-                buffer += line
-
-    return chunks
-
-def search_faiss(query, k=5):
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    index = faiss.read_index("vector_index.faiss")
-    chunks = load_chunks()
-
-    q_emb = model.encode([query]).astype("float32")
-    D, I = index.search(q_emb, k)
-
-    results = []
-    for rank, (idx, dist) in enumerate(zip(I[0], D[0])):
-        results.append({
-            "rank": rank + 1,
-            "chunk_index": int(idx),
-            "distance": float(dist),
-            "text": chunks[idx]
-        })
-
-    return results
-
-def main():
-    if not os.path.exists("vector_index.faiss"):
-        index_faiss()
-    results = search_faiss("How was the market in 2018?")
-    for r in results:
-        print(f"Result {r['rank']}")
-        print(r["text"][:500], "\n---\n")
+    if not os.path.exists(CHUNKS_PATH):
+        return []
+    with open(CHUNKS_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
-if __name__ == "__main__":
-    main()
+def load_metadata():
+    if not os.path.exists(META_PATH):
+        return []
+    with open(META_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_chunks(chunks):
+    with open(CHUNKS_PATH, "w", encoding="utf-8") as f:
+        json.dump(chunks, f, indent=2)
+
+
+def save_metadata(meta):
+    with open(META_PATH, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2)
+
+
+def chunk_text(text, chunk_size=500):
+    return [
+        text[i:i + chunk_size]
+        for i in range(0, len(text), chunk_size)
+    ]
+
+
+def process_pdf_for_faiss(document_id, file_path):    
+    reader = PdfReader(file_path)
+    full_text = ""
+
+    for page in reader.pages:
+        extracted = page.extract_text()
+        if extracted:
+            full_text += extracted + "\n"
+
+    chunks = chunk_text(full_text)
+
+    embeddings = model.encode(chunks).astype("float32")
+
+    index = load_faiss_index(dim=embeddings.shape[1])
+    index.add(embeddings)
+
+    faiss.write_index(index, INDEX_PATH)
+
+    all_chunks = load_chunks()
+    chunk_start_index = len(all_chunks)
+    all_chunks.extend(chunks)
+    save_chunks(all_chunks)
+
+    meta = load_metadata()
+    meta.append({
+        "document_id": document_id,
+        "start": chunk_start_index,
+        "end": chunk_start_index + len(chunks)
+    })
+    save_metadata(meta)
+
+    return len(chunks)

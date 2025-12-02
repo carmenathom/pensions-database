@@ -99,3 +99,91 @@ def update_user(user_id, username, email, role, name):
     cur.close()
     conn.close()
 
+def insert_document(title, doc_type, source, added_by, filename):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO Document (title, doc_type, source, added_by, processed)
+        VALUES (%s, %s, %s, %s, FALSE)
+        RETURNING document_id;
+    """, (title, doc_type, source, added_by))
+
+    doc_id = cur.fetchone()['document_id']
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return doc_id
+
+def mark_document_processed(doc_id):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Document
+        SET processed = TRUE
+        WHERE document_id = %s;
+    """, (doc_id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def get_documents_by_user(user_id):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT document_id, title, doc_type, source, processed, added_at, added_by
+        FROM Document
+        WHERE added_by = %s
+        ORDER BY added_at DESC;
+    """, (user_id,))
+
+    docs = cur.fetchall()
+    cur.close()
+    conn.close()
+    return docs
+
+
+def get_document_by_id(doc_id):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT document_id, title, doc_type, source, processed, added_at, added_by
+        FROM Document
+        WHERE document_id = %s;
+    """, (doc_id,))
+
+    doc = cur.fetchone()
+    cur.close()
+    conn.close()
+    return doc
+
+
+def update_document(doc_id, title, doc_type, source):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Document
+        SET title = %s, doc_type = %s, source = %s
+        WHERE document_id = %s;
+    """, (title, doc_type, source, doc_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def delete_document_db(doc_id):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM Document WHERE document_id = %s;", (doc_id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()

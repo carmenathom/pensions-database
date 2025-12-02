@@ -13,6 +13,7 @@
           <li><a href="/">Home</a></li>
           {% if session.role == "Curator" %}
             <li><a href="/upload">Upload Document</a></li>
+            <li><a href="/curator/documents">My Documents</a></li>
           {% endif %}
           {% if session.role == "Admin" %}
             <li><a href="/admin/users">Manage Users</a></li>
